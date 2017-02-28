@@ -1,22 +1,3 @@
-/* 
- * random number, varying by time.  Seed should be a prime.
- *
- * Just reads the data from iChannel1 in sequence if seed is 1.  It's going to repeat every
- * 65535 frames, but the state should be different enough that it doesn't matter.
- * I'd like to set the seeds up so differently seeded calls repeat at different rates but I'm
- * not sure I've done that yet.  It works, anyway.
- */
-vec4 rnd_tv(int seed) {                
-    const float res_x = 256.;
-    const float res_y = 256.;    
-    int j = iFrame * seed;
-    float x = mod(float(j), res_x);
-    float y = mod((float(j) / res_x), res_y);
-	return texture(iChannel1, vec2(x/res_x, y/res_y));
-}
-
-
-
 //----------------------------------------------------------------------------------------
 // based on https://www.shadertoy.com/view/4djSRW
 ///  3 out, 3 in...
@@ -38,7 +19,7 @@ vec3 rnd3(vec2 position, int i)
     vec3 a = vec3(0.0), b = a;
     //NOTE - not handling i > MAX_ITERATIONS
     //will just start scaling down random numbers
-    for (int t = 0; t < MAX_ITERATIONS; t++)
+    for (int t = 0; t < MAX_ITERATIONS; t++)  // max_iterations thing is due to GLSL limitations?
     {
         if (t == i) {
             break;
@@ -58,7 +39,9 @@ vec4 oldColor(in vec2 fragCoord, in vec2 dxy) {
     return texture(iChannel0,  fract((fragCoord.xy + dxy) / iResolution.xy));
 }
 
+//get the next random number for the current pixel
 #define RND() (rnd3(fragCoord, rndi++))
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     int rndi = 0;
 	const vec4 black = vec4(0., 0., 0., 1.);
@@ -72,8 +55,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     //////////////////////    
     // sometimes adds a small coloured square at a random location
     //////////////////////    
-    if (true) {           
-        rnd = RND();
+    rnd = RND();
+    if (true) {                   
         if (true || iGlobalTime < 2.0) {
             if (rnd.x < .00001) {
                 fragColor = vec4(RND(), 1.);  
@@ -86,7 +69,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     
     
     //////////////////////
- 	// pick the dominant pixel from neighbouring pixels (and this pixel).   
+ 	// shuffle pixels around in a way that avoids vertical edges
  	//////////////////////
     
     
@@ -107,25 +90,36 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
     }
     
     if (isblack(col)) {        
+        // if current color is black, pick a nearby color
         col = oc(dir, 0.);
     } else {
+        // pick a nearby color IF it does NOT create a vertical edge
         vec4 potcol = oc(0, dir);
         if (potcol == oc(-1., dir) && potcol == oc(1., dir)) {
             col = potcol;
         }
     }
     
+
+    //////////////////////
+ 	// perhaps tweak the result
+ 	//////////////////////    
+
     float change_chance = pow(iMouse.x/iResolution.x, 2.)/9.;
     if (change_chance == 0.) {
         //it can be below 0.05, but not exactly 0
-        // so we still have a change_chance when there user hasn't clicked.
+        // so we still have a change_chance when the user hasn't clicked.
         change_chance = 0.05;
     }
-    
-    //change_chance *= change_chance;
-    
+      
     
     //fragColor = col; return;
+
+    //////////////////////
+ 	// pick the dominant pixel from neighbouring pixels (and this pixel).
+    // each colour dominates half the other colors
+ 	//////////////////////    
+
     //iterate over nearby pixels
     for (float dx = -1.0; dx < 2.0; dx++) {
         for (float dy = -1.0; dy < 2.0; dy++) {
