@@ -1,0 +1,2 @@
+iChannel0 - buffer a
+iChannel1 - colour noise
