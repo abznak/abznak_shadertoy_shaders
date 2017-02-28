@@ -1,10 +1,12 @@
 //----------------------------------------------------------------------------------------
-// based on https://www.shadertoy.com/view/4djSRW
+// Pseudorandom number generator, based on https://www.shadertoy.com/view/4djSRW
 ///  3 out, 3 in...
 #define HASHSCALE3 vec3(.1031, .1030, .0973)
 //#define HASHSCALE3 vec3(443.897, 441.423, 437.195)
 #define MAX_ITERATIONS 30
 #define MIN_ITERATIONS 4
+
+// hash33, tweaked to include an extra param
 vec3 hash33(vec3 p3, int i)
 {
 	p3 = fract(p3 * HASHSCALE3);
@@ -26,7 +28,7 @@ vec3 rnd3(vec2 position, int i)
         }
         float v = float(t+1)*.132;
         vec3 pos = vec3(position, iGlobalTime*.3) + iGlobalTime * 500. + 50.0;
-        a += hash33(pos, i);  //just changing the numer of iterations doesn't work
+        a += hash33(pos, i);  //just changing the numer of iterations doesn't work, so we pass in i
     }
     vec3 col = a / float(i);
     return col;
